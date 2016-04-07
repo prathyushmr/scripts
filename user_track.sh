@@ -1,4 +1,5 @@
-### Script to track the usage of user 
+#!/bin/bash
+# Ask the user details and log  it
 
 if [ !  -f $HOME/.session ]
 then
@@ -13,9 +14,9 @@ if [ -z $name ]
 then
 exit
 else
-date >> $HOME/.session
-cat $HOME/.name >> $HOME/.session
-cat $HOME/.adid >> $HOME/.session
+echo "The first login" `date` >> $HOME/.session
+echo "User Full name" `cat $HOME/.name` >> $HOME/.session
+echo "AD ID of the user" `cat $HOME/.adid` >> $HOME/.session
 fi
 echo "Session started at `date`" >> $HOME/.session
 fi

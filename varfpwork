@@ -1,0 +1,147 @@
+
+# 
+# Find the list of folders which are 180 days older and not being used
+ python3 old_folders_finder.py --base-folder /var/fpwork/ --days-num 180 --blacklist-file blacklist.txt > /tmp/listofunusedfolders
+ 
+ cat /tmp/listofunusedfolders  | sort
+
+ cat /tmp/listofunusedfolders  |  cut -d / -f 4 | sort | uniq  > /tmp/listoffolderstobechecked
+ 
+ for i in `cat /tmp/listoffolderstobechecked`; do  echo $i  `stat -c %U /var/fpwork/$i`; done | wc -l
+ 
+ 
+  for  i in `cat /tmp/listoffolderstobechecked`; do grep /var/fpwork/$i /tmp/listofunusedfolders ; done
+  
+
+ # List from the python script 
+  
+   /tmp/listofunusedfolders  sort it 
+ # Sort to get the  folder name alone 
+ 
+ cat /tmp/listofunusedfolders  |  cut -d / -f 4 | sort | uniq  > /tmp/listoffolderstobechecked
+ 
+ # Find the list of  folders to be removed for each id 
+ 
+ for in in `cat /tmp/listoffolderstobechecked` 
+ do
+ grep /var/fpwork/$i /tmp/listofunusedfolders  > /tmp/listofunusuedfolders_1
+ STAT=`stat -c %U /var/fpwork/$i`
+ if [ $STAT == UNKNOWN ]
+ then 
+ #send mail to Jacek  since no folder owners found 
+  mail -s "/var/fpwork cleanup" jacek.kucharski@nokia.com < mailbody2 
+ else
+EMAIL=`getent passwd $(STAT) | cut -d = -f 3 | cut -d , -f 1`
+#Send email 
+mail -s "/var/fpwork cleanup" $EMAIL -a /tmp/listofunsuedfolders < mailbody
+fi
+done
+
+
+
+# Check the list next week 
+# run the script to  take the current list from the python 
+/tmp/listofnewfolders
+comm -3 /tmp/listofunusedfolders  /tmp/listofunusuedfolders_1 > /tmp/linetobedleted
+
+
+for i in `cat /tmp/linetobedeleted`
+do
+sed -ie s+$i++g /tmp/listofunusedfolders2
+done 
+
+
+
+#Start the renaming of the folders 
+
+for i in `cat /tmp/listoffolderstobechecked`
+do
+grep /var/fpwork/$i  /tmp/listofunusedfolders2 > /tmp/listoffolderstoberenamed
+for d in `cat /tmp/listoffolderstoberenamed | cut -d / -f 5`
+do 
+mv /var/fpwork/$i/$d /var/fpwork/$i/OLD_$d 
+USTAT=`stat -c %U /var/fpwork/$i`
+GSTAT=`stat -c %G /var/fpwork/$i`
+if [ $USTAT == UNKNOWN ]
+then
+chown root:$GSTAT -R /var/fpwork/$i/OLD_$d
+else
+chown $USTAT:$GSTAT  -R /var/fpwork/$i/OLD_$d
+fi
+done
+done
+
+#Send the list of renamed folders to all users 
+
+for i in `cat /tmp/listoffolderstobechecked`
+do
+ls -d /var/fpwork/$i/OLD_*  > /tmp/listofrenamedfolders
+STAT=`stat -c %U /var/fpwork/$i`
+
+if [ $STAT == UNKNOWN ]
+ then 
+ #send mail to Jacek  since no folder owners found 
+  mail -s "/var/fpwork cleanup | List of renamed folders" jacek.kucharski@nokia.com -a /tmp/listofrenamedfolders < mailbody_renamed_folder_list_message
+ else
+EMAIL=`getent passwd $(STAT) | cut -d = -f 3 | cut -d , -f 1`
+#Send email 
+mail -s "/var/fpwork cleanup | List of renamed folders" $EMAIL -a /tmp/listofrenamedfolders < mailbody_renamed_folder_list_message
+fi
+done
+
+
+# Delete the renamed folders permanently if 1 week older OLD_* folders exist
+
+# Take lis of all renamed folders 
+
+for i in `cat /tmp/listoffolderstobechecked`
+do 
+find /var/fpwork/$i/  -name OLD_* -type d -mtime +7 > /tmp/listofrenamedfolders_7
+for g in `cat /tmp/listofrenamedfolders_7`
+rm -rf $g
+done
+STAT=`stat -c %U /var/fpwork/$i`
+if [ $STAT == UNKNOWN ]
+ then 
+ #send mail to Jacek  since no folder owners found 
+  mail -s "/var/fpwork cleanup | Older folders deleted" jacek.kucharski@nokia.com -a /tmp/listofrenamedfolders_7 < mailbody_deleted_listof_OLD_folders
+ else
+EMAIL=`getent passwd $(STAT) | cut -d = -f 3 | cut -d , -f 1`
+#Send email 
+mail -s "/var/fpwork cleanup | Older folders deleted" $EMAIL -a /tmp/listofrenamedfolders_7  < mailbody_deleted_listof_OLD_folders
+fi
+done
+
+
+ 
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
